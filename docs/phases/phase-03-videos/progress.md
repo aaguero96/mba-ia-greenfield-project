@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 6/14 completed
+**SIs:** 8/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -47,14 +47,14 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** The row id has to exist before the storage key can be built (the key embeds it), so the id is generated with `randomUUID()` rather than waiting for the insert. A `public_id` collision is handled by a bounded retry that also aborts the multipart upload opened by the abandoned attempt — verified by an integration test that forces the insert to fail and then asserts no orphan upload and no row remain. `videos.module.spec.ts` was converted to `videos.module.integration-spec.ts`: once the module wired a database, a queue and storage, a "unit" module test was no longer honest under the project's own suffix rule.
 
 ### SI-03.6 — Part Signing and Resume
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 6 unit (videos.service.upload.spec: guards + signing) and 7 e2e (videos-upload.e2e-spec: signing, real PUT to the signed URL, resume via `GET /upload`, out-of-range part, ownership, unknown video); full suite 258/258, e2e 77/77
+- **Observations:** The e2e uploads real bytes with a plain `fetch` PUT, never through the API — the same shape a browser uses, and the path that breaks under the SDK's default checksum headers. Re-signing the same part number is explicitly covered, because that is what makes the 6h TTL sufficient rather than a hard deadline.
 
 ### SI-03.7 — Upload Completion and Size Verification
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 7 unit (completion, size mismatch, enqueue ordering, abort) and 6 e2e (completion → `processing`, 422 on mismatch, 409 on double completion, cancel); full suite 258/258, e2e 77/77, `tsc --noEmit` exit 0
+- **Observations:** The size mismatch path is the one that proves the 10GB ceiling is actually enforced: the e2e declares 9999 bytes, uploads 100, and asserts 422 plus a `failed` row with a reason — something no mocked storage could demonstrate. Enqueueing happens strictly after the row is saved, asserted by an ordering test, so a job can never point at a video that is not yet `processing`. Both `videos.service.integration-spec` and the e2e app needed `QueueModule` registered once the service took the queue as a dependency.
 
 ### SI-03.8 — Queue Module, Job Production, and Worker Bootstrap
 - **Status:** completed

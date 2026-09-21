@@ -9,6 +9,7 @@ import {
   PartCountExceededException,
 } from '../common/exceptions/domain.exception';
 import { StorageService } from '../storage/storage.service';
+import { VideoQueueService } from './video-queue.service';
 import { Video } from './entities/video.entity';
 import { VideosService } from './videos.service';
 import { VIDEO_MAX_PARTS, VIDEO_PART_SIZE_BYTES } from './videos.constants';
@@ -75,6 +76,7 @@ describe('VideosService — initiateUpload', () => {
           useValue: { getRepository: () => channelRepository },
         },
         { provide: StorageService, useValue: storage },
+        { provide: VideoQueueService, useValue: { enqueueProcessing: jest.fn() } },
         { provide: videoConfig.KEY, useValue: videoConfig() },
         { provide: appConfig.KEY, useValue: { url: 'http://localhost:3000' } },
       ],

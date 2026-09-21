@@ -102,3 +102,13 @@ export class UploadSizeMismatchException extends DomainException {
     );
   }
 }
+
+export class PartNumberOutOfRangeException extends DomainException {
+  constructor() {
+    super(
+      'PART_NUMBER_OUT_OF_RANGE',
+      400,
+      'Part number is outside the range of this upload',
+    );
+  }
+}

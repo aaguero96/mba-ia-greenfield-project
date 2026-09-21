@@ -12,10 +12,12 @@ import videoConfig from '../config/video.config';
 import { Channel } from '../channels/entities/channel.entity';
 import { User } from '../users/entities/user.entity';
 import { ALL_ENTITIES } from '../database/entities';
+import { QueueModule } from '../queue/queue.module';
 import { StorageModule } from '../storage/storage.module';
 import { StorageService } from '../storage/storage.service';
 import { cleanAllTables } from '../test/create-test-data-source';
 import { Video } from './entities/video.entity';
+import { VideoQueueService } from './video-queue.service';
 import { VideosService } from './videos.service';
 
 /**
@@ -58,8 +60,9 @@ describe('VideosService (integration)', () => {
         }),
         TypeOrmModule.forFeature([Video, Channel, User]),
         StorageModule,
+        QueueModule,
       ],
-      providers: [VideosService],
+      providers: [VideosService, VideoQueueService],
     }).compile();
 
     await moduleRef.init();
