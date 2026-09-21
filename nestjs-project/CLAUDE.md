@@ -13,6 +13,8 @@ docker compose ps   # all services must show status "running"
 Then verify each infrastructure service is actually ready to accept connections — not just running:
 
 - **PostgreSQL:** `docker compose exec db pg_isready -U streamtube` — expect `accepting connections`
+- **Redis:** `docker compose exec redis redis-cli ping` — expect `PONG`
+- **MinIO:** `curl -f http://localhost:9000/minio/health/live` — expect HTTP 200
 
 Only start the NestJS dev server (`npm run start:dev`) when the user **explicitly** asks to run the application — never as part of "start the environment".
 
@@ -34,6 +36,16 @@ docker compose exec nestjs-api npm run start:dev
 Services:
 - `nestjs-api` — NestJS API, port `3000`
 - `db` — PostgreSQL 17, port `5432`, database `streamtube`, user/password `streamtube`
+- `mailpit` — SMTP on `1025`, web UI on `8025`
+- `minio` — S3-compatible object storage, API on `9000`, console on `9001`, user/password `streamtube`/`streamtube123`
+- `redis` — queue backend for BullMQ, port `6379`
+- `video-worker` — the FFmpeg worker; consumes the `video-processing` queue and has **no HTTP port**
+
+The `video-worker` service starts itself from `Dockerfile.worker` and waits for
+`node_modules` to exist, so it survives a first `docker compose up` on a fresh
+checkout. It is the only image that needs FFmpeg at runtime; `Dockerfile.dev`
+also installs it so the worker's tests can run with the rest of the suite in a
+single command.
 
 All verification and teardown commands run on the **host machine**:
 
@@ -60,6 +72,7 @@ docker compose down
 
 ```bash
 npm run start:dev                        # Dev server with hot-reload
+npm run worker:dev                       # Video worker (watch mode) — runs in the video-worker container
 npm run build                            # Compile to dist/
 npm run start:prod                       # Run compiled build
 
@@ -80,7 +93,25 @@ docker compose ps
 docker compose logs nestjs-api
 docker compose exec db pg_isready -U streamtube
 curl http://localhost:3000
+docker compose exec redis redis-cli ping
+docker compose logs video-worker
+curl -f http://localhost:9000/minio/health/live
 ```
+
+### Environment caveats for the video stack
+
+- `S3_ENDPOINT` is what the API and the worker resolve inside the Compose network
+  (`http://minio:9000`); `S3_PUBLIC_ENDPOINT` is what an external client resolves
+  (`http://localhost:9000`). A SigV4 signature binds the host it was signed for,
+  so the two cannot be collapsed into one value.
+- The test suite runs **inside** a container, where `localhost` is the container
+  itself, so `test/setup-test-env.ts` applies `S3_PUBLIC_ENDPOINT_TEST` over the
+  public endpoint and gives the queue a separate Redis key prefix — otherwise the
+  running worker would consume the jobs the tests enqueue.
+- Both `S3Client` instances must be built with
+  `requestChecksumCalculation: 'WHEN_REQUIRED'`. Since v3.729 the AWS SDK adds
+  CRC32 checksum headers by default, which breaks pre-signed URLs against MinIO
+  with `SignatureDoesNotMatch`.
 
 ### Test execution
 
@@ -147,6 +178,9 @@ Whenever possible, prefer storing only the bare address in `.env` and composing 
 NestJS with standard module structure. Source lives in `src/`, compiled output in `dist/`.
 
 - Each domain feature gets its own module (e.g., `UsersModule`, `VideosModule`) registered in `AppModule`
+- `VideosModule` owns the video entity, the upload endpoints (`videos.controller.ts`) and the public playback endpoints (`videos-public.controller.ts`)
+- `StorageModule` is the only place that talks to the AWS SDK; `QueueModule` is the producer side of BullMQ
+- `WorkerModule` (`src/worker/`) is a separate application context started by `src/main.worker.ts`; it registers the entity list explicitly, because it imports only `VideosModule` and `autoLoadEntities` would miss `Channel`
 - Controllers handle HTTP routing; Services hold business logic; both are scoped to their module
 
 ## Code Conventions
