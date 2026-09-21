@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 0/14 completed
+**SIs:** 1/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -19,9 +19,9 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 `DG-04` and `INC-01` in `validation.md` and repaired by SI-03.1 and SI-03.14.
 
 ### SI-03.1 — Baseline Repairs (inherited test defects)
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 144/144 unit+integration passing (was 143/144), twice in a row; 52/52 e2e passing via plain `npm run test:e2e` (was 5/52)
+- **Observations:** The enum leak was the whole failure. `DROP TABLE ... CASCADE` does not remove a PostgreSQL enum type, and any suite running with `synchronize: true` recreates `verification_tokens_type_enum` before the migration suite runs — so `CREATE TYPE` in `CreateAuthTokens` failed. Enums are now dropped sequentially **after** the tables (concurrently with them in the same `Promise.all` races against the CASCADE). Confirmed the suite is now idempotent: two consecutive full runs are green against an already-migrated database.
 
 ### SI-03.2 — Dependencies, Config Namespaces, and Docker Compose Infrastructure
 - **Status:** pending

@@ -14,6 +14,13 @@ const MANAGED_TABLES = [
   'verification_tokens',
 ];
 
+// Dropping the tables is not enough: a PostgreSQL enum type outlives its table and
+// is also created by any suite running with `synchronize: true`. Leaving one behind
+// makes the next `CREATE TYPE` inside a migration fail with
+// `type "..." already exists` — which is why this suite passed in isolation but
+// failed inside a full run.
+const MANAGED_ENUMS = ['verification_tokens_type_enum'];
+
 describe('Database migrations (integration)', () => {
   let dataSource: DataSource;
 
@@ -37,6 +44,11 @@ describe('Database migrations (integration)', () => {
       ),
       dataSource.query(`DROP TABLE IF EXISTS "migrations" CASCADE`),
     ]);
+
+    // Enum types must be dropped after their tables, never concurrently with them.
+    for (const enumName of MANAGED_ENUMS) {
+      await dataSource.query(`DROP TYPE IF EXISTS "${enumName}" CASCADE`);
+    }
   });
 
   afterAll(async () => {
