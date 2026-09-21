@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,12 +15,19 @@ import {
   UploadSizeMismatchException,
   VideoNotFoundException,
   VideoNotOwnedException,
+  VideoNotReadyException,
 } from '../common/exceptions/domain.exception';
 import { StorageService } from '../storage/storage.service';
 import { videoSourceKey } from '../storage/storage.keys';
 import { Video } from './entities/video.entity';
 import { generatePublicId } from './video-public-id.util';
 import { buildVideoUrls } from './video-urls.util';
+import { buildAttachmentDisposition } from './content-disposition.util';
+import {
+  formatContentRange,
+  parseRangeHeader,
+  toRangeHeader,
+} from './range.util';
 import { VideoQueueService } from './video-queue.service';
 import { VIDEO_PUBLIC_ID_MAX_ATTEMPTS } from './videos.constants';
 import type { CompletedPartDto } from './dto/complete-upload.dto';
@@ -34,6 +42,22 @@ import type {
 } from './dto/upload-status.dto';
 
 const UNIQUE_VIOLATION = '23505';
+
+export type StreamResponse =
+  | {
+      kind: 'full';
+      stream: Readable;
+      contentLength: number;
+      contentType: string;
+    }
+  | {
+      kind: 'partial';
+      stream: Readable;
+      contentLength: number;
+      contentRange: string;
+      contentType: string;
+    }
+  | { kind: 'unsatisfiable'; size: number };
 
 @Injectable()
 export class VideosService {
@@ -279,6 +303,150 @@ export class VideosService {
 
     await this.safeAbort(video.storage_key, video.upload_id as string);
     await this.videoRepository.remove(video);
+  }
+
+  /**
+   * Loads a video for a read operation.
+   *
+   * A video that is not `ready` is reported as **not found** to anyone but its
+   * owner, rather than forbidden: a 403 would confirm that the id exists. The
+   * owner sees their own videos in any status, which is what makes an upload
+   * observable while it is still being processed.
+   */
+  async findPublic(publicId: string, currentUserId?: string): Promise<Video> {
+    const video = await this.videoRepository.findOne({
+      where: { public_id: publicId },
+      relations: ['channel'],
+    });
+
+    if (!video) {
+      throw new VideoNotFoundException();
+    }
+
+    const isOwner =
+      currentUserId !== undefined && video.channel.user_id === currentUserId;
+
+    if (video.status !== 'ready' && !isOwner) {
+      throw new VideoNotFoundException();
+    }
+
+    return video;
+  }
+
+  async getPublicVideo(
+    publicId: string,
+    currentUserId?: string,
+  ): Promise<VideoResponseDto> {
+    const video = await this.findPublic(publicId, currentUserId);
+    return this.toResponse(video, video.channel);
+  }
+
+  /** A playable video — the guard in front of streaming and download. */
+  async findPlayable(
+    publicId: string,
+    currentUserId?: string,
+  ): Promise<Video> {
+    const video = await this.findPublic(publicId, currentUserId);
+
+    if (video.status !== 'ready') {
+      throw new VideoNotReadyException();
+    }
+
+    return video;
+  }
+
+  /**
+   * Resolves a streaming request into what the controller has to send.
+   *
+   * Ranges are parsed and clamped server-side, then re-issued to storage, so the
+   * API transfers only the requested slice — a player asking for a few MB never
+   * causes a multi-gigabyte read.
+   */
+  async openStream(
+    publicId: string,
+    rangeHeader: string | undefined,
+    currentUserId?: string,
+  ): Promise<StreamResponse> {
+    const video = await this.findPlayable(publicId, currentUserId);
+    const head = await this.storage.headObject(video.storage_key);
+    const parsed = parseRangeHeader(rangeHeader, head.contentLength);
+
+    if (parsed.kind === 'unsatisfiable') {
+      return { kind: 'unsatisfiable', size: head.contentLength };
+    }
+
+    if (parsed.kind === 'none') {
+      const object = await this.storage.getObjectRange(video.storage_key);
+      return {
+        kind: 'full',
+        stream: object.stream,
+        contentLength: head.contentLength,
+        contentType: video.content_type,
+      };
+    }
+
+    const object = await this.storage.getObjectRange(
+      video.storage_key,
+      toRangeHeader(parsed.range),
+    );
+
+    return {
+      kind: 'partial',
+      stream: object.stream,
+      contentLength: parsed.range.end - parsed.range.start + 1,
+      contentRange: formatContentRange(parsed.range, head.contentLength),
+      contentType: video.content_type,
+    };
+  }
+
+  /**
+   * Builds the download handoff.
+   *
+   * The full file is the one genuinely large transfer in the phase, so it is
+   * served straight from storage through a short-lived pre-signed URL — the API
+   * returns a redirect and moves no bytes (see TD-07).
+   */
+  async buildDownloadUrl(
+    publicId: string,
+    currentUserId?: string,
+  ): Promise<string> {
+    const video = await this.findPlayable(publicId, currentUserId);
+
+    return this.storage.signGetObject(
+      video.storage_key,
+      this.config.downloadUrlTtl,
+      {
+        responseContentDisposition: buildAttachmentDisposition(
+          video.original_filename,
+        ),
+        responseContentType: video.content_type,
+      },
+    );
+  }
+
+  /** Streams the generated thumbnail, once the worker has produced one. */
+  async openThumbnail(
+    publicId: string,
+    currentUserId?: string,
+  ): Promise<StreamResponse> {
+    const video = await this.findPlayable(publicId, currentUserId);
+
+    if (video.thumbnail_key === null) {
+      throw new VideoNotFoundException();
+    }
+
+    const object = await this.storage.getObjectRange(
+      video.thumbnail_key,
+      undefined,
+      this.storage.thumbnailsBucket,
+    );
+
+    return {
+      kind: 'full',
+      stream: object.stream,
+      contentLength: object.contentLength,
+      contentType: object.contentType ?? 'image/jpeg',
+    };
   }
 
   /**

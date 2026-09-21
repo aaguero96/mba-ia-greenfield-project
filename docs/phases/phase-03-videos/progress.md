@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 9/14 completed
+**SIs:** 11/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -74,14 +74,14 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
   The fixture video is generated with FFmpeg's `testsrc` and cached in the OS temp dir, so no binary asset is committed. Thumbnail extraction is asserted to be byte-identical for the same offset, which is what makes a retry overwrite rather than accumulate.
 
 ### SI-03.10 — Video Metadata and Range Streaming
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 20 unit (range.util.spec: 15, content-disposition.util.spec: 5) + 3 new guard unit tests + 13 e2e (videos-playback.e2e-spec: metadata visibility, 206 with exact bytes, middle range, full body with `Accept-Ranges`, whole file reassembled from consecutive ranges, 416, 25 unthrottled requests, thumbnail); full suite 320/320, e2e 93/93
+- **Observations:** The inherited `@Public()` decorator short-circuited the guard **before** attaching the caller, so "the owner sees their own unprocessed video" would silently never work. The guard now treats a public route as *optional* authentication: a valid token attaches the user, an absent or invalid one is ignored and never turns a public request into a 401. The playback e2e does not fake the `ready` state — it boots the real worker context and runs the actual consumer, so streaming is asserted against a genuinely processed video.
 
 ### SI-03.11 — Download via Redirect
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 3 e2e (302 to a pre-signed URL, the complete file served as an attachment when the redirect is followed, 404 for a non-ready video); full suite 320/320, e2e 93/93, `tsc --noEmit` exit 0
+- **Observations:** `res.redirect()` writes a short courtesy body, so "the API moves no bytes" is asserted as the body being bounded by the URL length and independent of the file size, rather than empty. Two unrelated fixes fell out of this SI: `cleanAllTables` became a single `TRUNCATE ... CASCADE`, because a sequence of DELETEs raced with the second connection pool that this suite opens for the worker context; and `fetch(..., { body })` needed a `Uint8Array` rather than Node's `Buffer` subtype to satisfy `BodyInit`.
 
 ### SI-03.12 — Full-Cycle E2E Hardening
 - **Status:** pending

@@ -22,12 +22,20 @@ export class JwtAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
-
     const request = context
       .switchToHttp()
       .getRequest<{ headers: Record<string, string>; user: unknown }>();
     const authHeader = request.headers?.authorization;
+
+    if (isPublic) {
+      // A public route does not require a token, but when a valid one is sent
+      // the caller's identity is still attached: endpoints such as the video
+      // metadata one show the owner their own unpublished content while
+      // remaining reachable anonymously. An absent or invalid token is simply
+      // ignored here — it must not turn a public request into a 401.
+      await this.attachUserIfPossible(request, authHeader);
+      return true;
+    }
 
     if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
       throw new UnauthorizedException();
@@ -41,6 +49,23 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch {
       throw new UnauthorizedException();
+    }
+  }
+
+  private async attachUserIfPossible(
+    request: { user: unknown },
+    authHeader: string | undefined,
+  ): Promise<void> {
+    if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
+      return;
+    }
+
+    try {
+      request.user = await this.jwtService.verifyAsync<JwtPayload>(
+        authHeader.slice(BEARER_PREFIX.length),
+      );
+    } catch {
+      // Anonymous access stays allowed on a public route.
     }
   }
 }

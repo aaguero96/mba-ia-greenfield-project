@@ -26,11 +26,16 @@ export function createTestDataSource(
   });
 }
 
+/**
+ * Wipes every table in one statement.
+ *
+ * A sequence of DELETEs is sensitive to ordering and to anything else holding a
+ * connection — an e2e suite that also boots the worker context has two pools
+ * against the same database, and a delete that lands out of order fails with a
+ * foreign-key violation. TRUNCATE ... CASCADE is atomic and order-independent.
+ */
 export async function cleanAllTables(dataSource: DataSource): Promise<void> {
-  // videos references channels, so it must be deleted first.
-  await dataSource.query('DELETE FROM "videos"');
-  await dataSource.query('DELETE FROM "refresh_tokens"');
-  await dataSource.query('DELETE FROM "verification_tokens"');
-  await dataSource.query('DELETE FROM "channels"');
-  await dataSource.query('DELETE FROM "users"');
+  await dataSource.query(
+    'TRUNCATE TABLE "videos", "refresh_tokens", "verification_tokens", "channels", "users" CASCADE',
+  );
 }

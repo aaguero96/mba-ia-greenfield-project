@@ -6,6 +6,7 @@ import { StorageModule } from '../storage/storage.module';
 import { Video } from './entities/video.entity';
 import { VideoQueueService } from './video-queue.service';
 import { VideosController } from './videos.controller';
+import { VideosPublicController } from './videos-public.controller';
 import { VideosService } from './videos.service';
 
 @Module({
@@ -14,7 +15,7 @@ import { VideosService } from './videos.service';
     QueueModule,
     StorageModule,
   ],
-  controllers: [VideosController],
+  controllers: [VideosController, VideosPublicController],
   providers: [VideoQueueService, VideosService],
   exports: [TypeOrmModule, VideoQueueService, VideosService],
 })
