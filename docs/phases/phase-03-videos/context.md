@@ -43,15 +43,15 @@ sources_mtime:
 
 | Ref | Source | Scope | Topic | Status | Decision | Libraries |
 |-----|--------|-------|-------|--------|----------|-----------|
-| phase-03-videos/TD-01 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Message Queue Technology | decided | A (BullMQ + Redis via `@nestjs/bullmq`) | @nestjs/bullmq@^12.x, bullmq@^6.x |
+| phase-03-videos/TD-01 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Message Queue Technology | decided | A (BullMQ + Redis via `@nestjs/bullmq`) | @nestjs/bullmq@^11.x, bullmq@^5.x, ioredis@^5.x |
 | phase-03-videos/TD-02 | technical-decisions-phase-03-videos.md | Backend | Large File Upload Strategy (10GB) | decided | C (pre-signed S3 multipart, 64MB parts) | @aws-sdk/client-s3@^3.x, @aws-sdk/s3-request-presigner@^3.x |
 | phase-03-videos/TD-03 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Object Storage Layout | decided | B (two buckets, `{channel_id}/{video_id}/` keys) | @aws-sdk/client-s3@^3.x |
 | phase-03-videos/TD-04 | technical-decisions-phase-03-videos.md | Backend | Unique Public Video Identifier | decided | B (11-char `public_id` via `crypto.randomBytes`) | — |
-| phase-03-videos/TD-05 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Video Worker Runtime Topology | decided | A (shared codebase, separate entrypoint + container) | @nestjs/bullmq@^12.x |
+| phase-03-videos/TD-05 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Video Worker Runtime Topology | decided | A (shared codebase, separate entrypoint + container) | @nestjs/bullmq@^11.x |
 | phase-03-videos/TD-06 | technical-decisions-phase-03-videos.md | Backend | Metadata Extraction and Thumbnail Generation | decided | B+2 (`execFile` of ffprobe/ffmpeg over pre-signed URL) | — (system binaries: ffmpeg/ffprobe) |
 | phase-03-videos/TD-07 | technical-decisions-phase-03-videos.md | Backend | Streaming and Download Delivery | decided | C (proxied `206` streaming, redirected download) | @aws-sdk/client-s3@^3.x |
-| phase-03-videos/TD-08 | technical-decisions-phase-03-videos.md | Backend | Video Status Lifecycle and Failure Handling | decided | A+2 (4 states, 3 retries w/ backoff, reason persisted) | bullmq@^6.x |
-| phase-03-videos/TD-09 | technical-decisions-phase-03-videos.md | Backend | Job Payload and Consumer Idempotency | decided | B (thin payload, idempotent consumer) | bullmq@^6.x |
+| phase-03-videos/TD-08 | technical-decisions-phase-03-videos.md | Backend | Video Status Lifecycle and Failure Handling | decided | A+2 (4 states, 3 retries w/ backoff, reason persisted) | bullmq@^5.x |
+| phase-03-videos/TD-09 | technical-decisions-phase-03-videos.md | Backend | Job Payload and Consumer Idempotency | decided | B (thin payload, idempotent consumer) | bullmq@^5.x |
 | phase-03-videos/TD-10 | technical-decisions-phase-03-videos.md | Backend / Infrastructure | Storage Endpoint Duality | decided | B (internal + public endpoints, two clients, path-style) | @aws-sdk/client-s3@^3.x |
 | phase-03-videos/TD-11 | technical-decisions-phase-03-videos.md | Backend | Upload Constraint Enforcement | decided | B (validate at initiation, `HeadObject` at completion) | @aws-sdk/client-s3@^3.x |
 | phase-03-videos/TD-12 | technical-decisions-phase-03-videos.md | Backend | Thumbnail Frame Selection and Output Format | decided | B (10% of duration clamped, JPEG 1280w) | — |
@@ -83,9 +83,9 @@ _Source files:_
 
 ### phase-03-videos/TD-01
 
-**Recommendation:** Option A (BullMQ + Redis) — the job characteristics of this phase (few messages, long duration, retry-on-failure, stall recovery, idempotent consumer) map one-to-one onto BullMQ's built-in primitives, while RabbitMQ would require rebuilding retry/backoff on dead-letter exchanges and a Postgres-backed queue would push a CPU-adjacent workload onto the transactional database the architecture deliberately keeps separate. `@nestjs/bullmq@12` supports `@nestjs/core ^11` and `bullmq ^6`.
+**Recommendation:** Option A (BullMQ + Redis) — the job characteristics of this phase (few messages, long duration, retry-on-failure, stall recovery, idempotent consumer) map one-to-one onto BullMQ's built-in primitives, while RabbitMQ would require rebuilding retry/backoff on dead-letter exchanges and a Postgres-backed queue would push a CPU-adjacent workload onto the transactional database the architecture deliberately keeps separate. `@nestjs/bullmq@11` supports `@nestjs/core ^11` and `bullmq ^5`; the v12 line is ESM-only and unusable in this CommonJS build.
 
-**Libraries:** `@nestjs/bullmq@^12.x`, `bullmq@^6.x`
+**Libraries:** `@nestjs/bullmq@^11.x`, `bullmq@^5.x`
 
 ### phase-03-videos/TD-02
 
@@ -109,7 +109,7 @@ _Source files:_
 
 **Recommendation:** Option A (shared codebase, separate entrypoint and container) — delivers the isolation the architecture diagram calls for (own container, own image with FFmpeg, independently scalable) without duplicating entities and config. The worker's job is to update the same `videos` rows the API created, so sharing the entity/repository layer removes an entire class of drift bugs. Bootstrapped with `NestFactory.createApplicationContext` (no HTTP listener).
 
-**Libraries:** `@nestjs/bullmq@^12.x`
+**Libraries:** `@nestjs/bullmq@^11.x`
 
 ### phase-03-videos/TD-06
 
@@ -127,13 +127,13 @@ _Source files:_
 
 **Recommendation:** Option A + Option 2 (`draft` → `processing` → `ready` | `failed`; 3 attempts with exponential backoff) — the four states are exactly the cycle the phase requires and every one of them is server-observable, unlike a client-driven `uploading` state that can lie. Bounded retry respects the asymmetry of the workload: the user already paid a very expensive upload, so three attempts to separate a transient fault from a real one is cheap. The failure reason is persisted on the row and the source object is retained so re-processing never costs another upload.
 
-**Libraries:** `bullmq@^6.x`
+**Libraries:** `bullmq@^5.x`
 
 ### phase-03-videos/TD-09
 
 **Recommendation:** Option B (thin payload `{ videoId }`, idempotent consumer) — at-least-once delivery makes re-execution normal, so carrying a stale row snapshot in the message buys nothing and couples the message contract to the schema. `jobId = videoId` deduplicates enqueues, the worker re-reads the row and early-returns when already `ready`, and the deterministic thumbnail key makes a re-run overwrite instead of accumulating garbage — covering all three duplication paths.
 
-**Libraries:** `bullmq@^6.x`
+**Libraries:** `bullmq@^5.x`
 
 ### phase-03-videos/TD-10
 

@@ -21,6 +21,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    # Waits for the dependencies to be installed (they are installed once, from
+    # the nestjs-api container) instead of crash-looping on a fresh checkout.
+    command: >
+      sh -c "until [ -d node_modules/@nestjs/core ]; do
+               echo 'waiting for npm install...'; sleep 2;
+             done; npm run worker:dev"
     volumes:
       - .:/home/node/app
     depends_on:

@@ -1,26 +1,7 @@
 import { DataSource, EntitySchema, MigrationInterface } from 'typeorm';
-import { Channel } from '../channels/entities/channel.entity';
-import { RefreshToken } from '../auth/entities/refresh-token.entity';
-import { User } from '../users/entities/user.entity';
-import { VerificationToken } from '../auth/entities/verification-token.entity';
-import { Video } from '../videos/entities/video.entity';
+import { ALL_ENTITIES } from '../database/entities';
 
-/**
- * Every entity in the schema, in one place.
- *
- * A test DataSource must register the whole graph, not just the entities a suite
- * touches: an inverse relation such as `Channel.videos` fails metadata building
- * with "Entity metadata for Channel#videos was not found" when its other side is
- * missing. Keeping the list here means adding an entity does not break every
- * existing suite.
- */
-export const ALL_ENTITIES = [
-  User,
-  Channel,
-  RefreshToken,
-  VerificationToken,
-  Video,
-];
+export { ALL_ENTITIES };
 
 interface TestDataSourceOptions {
   synchronize?: boolean;

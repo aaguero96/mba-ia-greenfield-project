@@ -51,6 +51,15 @@ _Given by the project (not an open decision):_ the object storage is S3-compatib
 
 **Decision:** A (BullMQ + Redis, via `@nestjs/bullmq`)
 
+**Note (implementation):** pinned to the **CommonJS** line of the packages —
+`@nestjs/bullmq@^11` with `bullmq@^5`, plus an explicit `ioredis@^5`. `@nestjs/bullmq@12`
+ships ESM-only (`"type": "module"`), which Node 25 loads in production but ts-jest's
+CommonJS runtime cannot parse, breaking every suite that transitively imports it —
+including the e2e suites, since `AppModule` imports `QueueModule`. `ioredis` is an
+optional peer that BullMQ no longer bundles, and `typeorm@0.3.28` pins it to `^5`, so
+`^5` is the only version satisfying both. The decision itself is unchanged; only the
+package line moved. See `docs/phases/phase-03-videos/library-refs.md`.
+
 ---
 
 ## TD-02: Large File Upload Strategy (up to 10GB)

@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 4/14 completed
+**SIs:** 5/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -57,9 +57,12 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** —
 
 ### SI-03.8 — Queue Module, Job Production, and Worker Bootstrap
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 15/15 (video-queue.service.spec: 6 unit, queue.integration-spec: 6 integration against real Redis, worker.module.spec: 2, videos.module.spec: 1); full suite 228/228, e2e 52/52, `tsc --noEmit` exit 0
+- **Observations:** Two library surprises, both found by running the worker rather than by reading docs.
+  (1) `@nestjs/bullmq@12` is ESM-only (`"type": "module"`). Node 25 loads it in production via `require(esm)`, so the container ran — but ts-jest's CommonJS runtime fails with `SyntaxError: Unexpected token 'export'` on every spec that transitively imports it, which would have included all three e2e suites via `AppModule → QueueModule`. Pinned to `@nestjs/bullmq@^11` + `bullmq@^5`, the CJS line, consistent with this project's CommonJS target.
+  (2) BullMQ no longer bundles `ioredis`; it is an optional peer that must be installed explicitly, and `typeorm@0.3.28` pins it to `^5`, so `ioredis@^6` fails `npm install` with ERESOLVE. `^5` satisfies both.
+  Also: `autoLoadEntities` does not work for the worker, which imports only `VideosModule` — `Video#channel` metadata failed until the entity list was made explicit. The list now lives in `src/database/entities.ts` and is consumed by both the worker and the test helper.
 
 ### SI-03.9 — Video Processing Consumer (metadata, thumbnail, status)
 - **Status:** pending

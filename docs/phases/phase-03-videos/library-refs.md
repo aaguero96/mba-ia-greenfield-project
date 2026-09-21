@@ -1,13 +1,17 @@
 ---
 libs:
   "@nestjs/bullmq":
-    version: "^12.0.0"
+    version: "^11.0.5"
     source: "https://docs.nestjs.com/techniques/queues"
     fetched_at: "2026-09-21T05:10:00-03:00"
   bullmq:
-    version: "^6.3.8"
+    version: "^5.81.5"
     source: "https://docs.bullmq.io/guide/connections"
     fetched_at: "2026-09-21T05:10:00-03:00"
+  ioredis:
+    version: "^5.11.1"
+    source: "https://docs.bullmq.io/guide/connections"
+    fetched_at: "2026-09-21T07:54:00-03:00"
   "@aws-sdk/client-s3":
     version: "^3.1136.0"
     source: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html"
@@ -52,15 +56,24 @@ Distilled docs for the libraries and infrastructure images decided in this phase
 
 **Source:** <https://docs.nestjs.com/techniques/queues> — official NestJS documentation. Maps to `phase-03-videos/TD-01` Decision A and `TD-05` Decision A.
 
-**Peer compatibility (verified via `npm view @nestjs/bullmq@12.0.0 peerDependencies`):**
+**Version pinned to the v11 line — `@nestjs/bullmq@12` is ESM-only.** Verified:
+`@nestjs/bullmq@12.0.0` declares `"type": "module"` and its `dist/index.js` starts with
+`export { ... }`. Node 25 loads it in production via `require(esm)`, so the worker
+container runs fine, but **ts-jest's CommonJS runtime cannot parse it** — every spec that
+transitively imports it dies with `SyntaxError: Unexpected token 'export'`, which includes
+the e2e suites, since `AppModule` imports `QueueModule`. This project compiles to
+CommonJS (`module: nodenext`, no `"type": "module"`), so the CJS line is the coherent
+choice — the same reasoning already recorded in TD-04 for `nanoid`.
+
+**Peer compatibility (verified via `npm view @nestjs/bullmq@11.0.3 peerDependencies`):**
 
 ```
-bullmq:          ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0
-@nestjs/core:    ^10.0.0 || ^11.0.0 || ^12.0.0
-@nestjs/common:  ^10.0.0 || ^11.0.0 || ^12.0.0
+bullmq:          ^3.0.0 || ^4.0.0 || ^5.0.0
+@nestjs/core:    ^10.0.0 || ^11.0.0
+@nestjs/common:  ^10.0.0 || ^11.0.0
 ```
 
-The project runs NestJS 11 and will install `bullmq@^6`, so both peers are satisfied.
+The project runs NestJS 11 with `bullmq@^5`, so both peers are satisfied.
 
 ### Root registration (async, with the project's `registerAs` config pattern)
 
@@ -152,6 +165,18 @@ gets a fast error instead of a hanging request.
 connection configuration. The API's queue connection keeps the default retry budget;
 the worker's connection sets `maxRetriesPerRequest: null`. This is wired in
 `queue.config.ts` as two distinct option builders.
+
+### `ioredis` must be installed explicitly
+
+BullMQ 5/6 declare `ioredis` as an **optional** peer dependency and no longer bundle it.
+Without it the process starts and then fails at queue construction with:
+
+> `BullMQ could not load the optional 'ioredis' package. Install it with npm install ioredis`
+
+The version is constrained from the other side too: `typeorm@0.3.28` declares
+`peerOptional ioredis@^5.0.4`, so installing `ioredis@^6` fails `npm install` with
+`ERESOLVE … Conflicting peer dependency: ioredis@5.11.1`. **`ioredis@^5` is the only
+version that satisfies both** TypeORM and BullMQ.
 
 ### Redis
 
