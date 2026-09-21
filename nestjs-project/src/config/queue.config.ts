@@ -8,6 +8,12 @@ export default registerAs('queue', () => {
     host,
     port,
     /**
+     * Redis key prefix for every queue. Tests override it (see
+     * `test/setup-test-env.ts`) so the worker running in its own container never
+     * consumes jobs a test enqueued, which would make queue assertions flaky.
+     */
+    prefix: process.env.QUEUE_PREFIX || 'streamtube',
+    /**
      * Producer side (HTTP request path): keep ioredis' default retry budget so a
      * request fails fast when Redis is down instead of hanging the caller.
      */

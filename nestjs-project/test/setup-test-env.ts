@@ -15,3 +15,10 @@
 if (process.env.S3_PUBLIC_ENDPOINT_TEST) {
   process.env.S3_PUBLIC_ENDPOINT = process.env.S3_PUBLIC_ENDPOINT_TEST;
 }
+
+/**
+ * The video worker runs continuously in its own container against the same
+ * Redis. Without a separate key prefix it would consume the jobs a test just
+ * enqueued, making every queue assertion race against it.
+ */
+process.env.QUEUE_PREFIX = process.env.QUEUE_PREFIX_TEST ?? 'streamtube-test';

@@ -13,6 +13,8 @@ import { ALL_ENTITIES } from '../database/entities';
 import { VIDEO_QUEUE } from '../queue/queue.constants';
 import { StorageModule } from '../storage/storage.module';
 import { VideosModule } from '../videos/videos.module';
+import { FfmpegService } from './ffmpeg.service';
+import { VideoProcessingConsumer } from './video-processing.consumer';
 
 /**
  * Root module of the video worker process. It shares the entities, config and
@@ -51,11 +53,13 @@ import { VideosModule } from '../videos/videos.module';
         // maxRetriesPerRequest: null — a background worker waits for Redis to
         // come back rather than crashing.
         connection: config.workerConnection,
+        prefix: config.prefix,
       }),
     }),
     BullModule.registerQueue({ name: VIDEO_QUEUE }),
     StorageModule,
     VideosModule,
   ],
+  providers: [FfmpegService, VideoProcessingConsumer],
 })
 export class WorkerModule {}

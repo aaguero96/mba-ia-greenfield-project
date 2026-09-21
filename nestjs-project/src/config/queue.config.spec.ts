@@ -51,6 +51,14 @@ describe('queueConfig', () => {
     expect(queueConfig().workerConnection.maxRetriesPerRequest).toBeNull();
   });
 
+  it('should default the queue prefix and allow an override', () => {
+    delete process.env.QUEUE_PREFIX;
+    expect(queueConfig().prefix).toBe('streamtube');
+
+    process.env.QUEUE_PREFIX = 'streamtube-test';
+    expect(queueConfig().prefix).toBe('streamtube-test');
+  });
+
   it('should point both connections at the same Redis instance', () => {
     process.env.REDIS_HOST = 'cache';
     process.env.REDIS_PORT = '6390';

@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 8/14 completed
+**SIs:** 9/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -65,9 +65,13 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
   Also: `autoLoadEntities` does not work for the worker, which imports only `VideosModule` — `Video#channel` metadata failed until the entity list was made explicit. The list now lives in `src/database/entities.ts` and is consumed by both the worker and the test helper.
 
 ### SI-03.9 — Video Processing Consumer (metadata, thumbnail, status)
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 38/38 (thumbnail-offset.util.spec: 9 unit, ffmpeg.service.spec: 9 unit, ffmpeg.service.integration-spec: 9 integration against the real binaries, video-processing.consumer.integration-spec: 11 integration against real DB + MinIO + FFmpeg); full suite 297/297, e2e 77/77, `tsc --noEmit` exit 0
+- **Observations:** Three things the plan did not anticipate.
+  (1) The worker's specs need `ffprobe`/`ffmpeg`, which by TD-05 live only in the worker image — so `Dockerfile.dev` now installs them too, with a comment that this is the **development/test** image and that a production API image must not carry the layer. The architectural separation (own container, own runtime image, independent scaling) is unaffected.
+  (2) Once the worker container was running a real consumer, `queue.integration-spec.ts` started failing: the live worker drained the jobs the test had just enqueued. Queues now take a Redis key `prefix` from config, and `test/setup-test-env.ts` forces a distinct one for tests, so the running worker and the suite never share keys.
+  (3) `await import(...)` inside a spec fails under ts-jest without `--experimental-vm-modules`; the dynamic imports were made static.
+  The fixture video is generated with FFmpeg's `testsrc` and cached in the OS temp dir, so no binary asset is committed. Thumbnail extraction is asserted to be byte-identical for the same offset, which is what makes a retry overwrite rather than accumulate.
 
 ### SI-03.10 — Video Metadata and Range Streaming
 - **Status:** pending
