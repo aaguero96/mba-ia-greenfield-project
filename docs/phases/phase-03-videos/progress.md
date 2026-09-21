@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 5/14 completed
+**SIs:** 6/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -42,9 +42,9 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** Adding the `Channel.videos` inverse relation broke ten inherited suites with `Entity metadata for Channel#videos was not found` — a test DataSource must register the whole entity graph, not just the entities the suite touches. Each of those specs declared its own copy of `const ALL_ENTITIES = [...]`, so the list is now exported once from `src/test/create-test-data-source.ts` and imported everywhere; the next entity will not break them again. Separately, the migration spec's `beforeAll` dropped tables concurrently via `Promise.all`, which started failing with `relation "channels" already exists` once `videos` referenced `channels` — the drops are now sequential and in reverse dependency order. `duration_seconds` uses a numeric column with a transformer because TypeORM returns `numeric` as a string; `size_bytes` stays a string on purpose, since 10GiB is beyond the range where a JS number is exact.
 
 ### SI-03.5 — Upload Initiation (pre-registration as draft)
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 30/30 (videos.service.spec: 12 unit, videos.service.integration-spec: 5 integration with real DB + MinIO, videos.module.integration-spec: 1, videos.e2e-spec: 12 e2e); full suite 245/245, e2e 64/64, `tsc --noEmit` exit 0
+- **Observations:** The row id has to exist before the storage key can be built (the key embeds it), so the id is generated with `randomUUID()` rather than waiting for the insert. A `public_id` collision is handled by a bounded retry that also aborts the multipart upload opened by the abandoned attempt — verified by an integration test that forces the insert to fail and then asserts no orphan upload and no row remain. `videos.module.spec.ts` was converted to `videos.module.integration-spec.ts`: once the module wired a database, a queue and storage, a "unit" module test was no longer honest under the project's own suffix rule.
 
 ### SI-03.6 — Part Signing and Resume
 - **Status:** pending
