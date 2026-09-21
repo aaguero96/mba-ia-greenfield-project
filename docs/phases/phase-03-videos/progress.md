@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 1/14 completed
+**SIs:** 2/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -24,9 +24,9 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** The enum leak was the whole failure. `DROP TABLE ... CASCADE` does not remove a PostgreSQL enum type, and any suite running with `synchronize: true` recreates `verification_tokens_type_enum` before the migration suite runs — so `CREATE TYPE` in `CreateAuthTokens` failed. Enums are now dropped sequentially **after** the tables (concurrently with them in the same `Promise.all` races against the CASCADE). Confirmed the suite is now idempotent: two consecutive full runs are green against an already-migrated database.
 
 ### SI-03.2 — Dependencies, Config Namespaces, and Docker Compose Infrastructure
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 29/29 config tests (storage.config.spec: 7 unit, queue.config.spec: 6 unit, env.validation.integration-spec: +10 new cases); full suite 166/166, e2e 52/52, `tsc --noEmit` exit 0
+- **Observations:** `docker.io/minio/minio` is no longer pullable anonymously (`pull access denied … repository does not exist`); pinned `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` instead. MinIO's healthcheck uses `mc ready local` — recent images ship `mc` but no `curl`. Adding `S3_ACCESS_KEY`/`S3_SECRET_KEY` as Joi-required broke every existing case in `env.validation.integration-spec.ts` until they were added to its `requiredEnv` fixture. Verified `ffprobe`/`ffmpeg` 5.1.9 exist in `video-worker` and are absent from `nestjs-api`, as TD-05 requires.
 
 ### SI-03.3 — Storage Module (S3 clients, bucket bootstrap, pre-signing)
 - **Status:** pending
