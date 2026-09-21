@@ -48,3 +48,67 @@ export class TokenReuseDetectedException extends DomainException {
     );
   }
 }
+
+export class VideoNotFoundException extends DomainException {
+  constructor() {
+    super('VIDEO_NOT_FOUND', 404, 'Video not found');
+  }
+}
+
+export class VideoNotOwnedException extends DomainException {
+  constructor() {
+    super('VIDEO_NOT_OWNED', 403, 'Video belongs to another channel');
+  }
+}
+
+export class VideoNotReadyException extends DomainException {
+  constructor() {
+    super('VIDEO_NOT_READY', 409, 'Video is not ready for playback');
+  }
+}
+
+export class ChannelNotFoundException extends DomainException {
+  constructor() {
+    super('CHANNEL_NOT_FOUND', 404, 'Channel not found for the current user');
+  }
+}
+
+export class InvalidUploadStateException extends DomainException {
+  constructor() {
+    super(
+      'INVALID_UPLOAD_STATE',
+      409,
+      'Upload is not in a valid state for this operation',
+    );
+  }
+}
+
+export class PartCountExceededException extends DomainException {
+  constructor() {
+    super(
+      'PART_COUNT_EXCEEDED',
+      400,
+      'Upload would exceed the maximum number of parts',
+    );
+  }
+}
+
+export class UploadSizeMismatchException extends DomainException {
+  constructor() {
+    super(
+      'UPLOAD_SIZE_MISMATCH',
+      422,
+      'Uploaded size does not match the declared size',
+    );
+  }
+}
+
+export class PartNumberOutOfRangeException extends DomainException {
+  constructor() {
+    super(
+      'PART_NUMBER_OUT_OF_RANGE',
+      400,
+      'Part number is outside the range of this upload',
+    );
+  }
+}

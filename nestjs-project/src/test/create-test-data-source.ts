@@ -1,4 +1,10 @@
 import { DataSource, EntitySchema, MigrationInterface } from 'typeorm';
+import { ALL_ENTITIES } from '../database/entities';
+
+export { ALL_ENTITIES };
+
+/** An entity is a class, so a constructor type says more than `Function`. */
+type EntityClass = new (...args: never[]) => object;
 
 interface TestDataSourceOptions {
   synchronize?: boolean;
@@ -6,7 +12,7 @@ interface TestDataSourceOptions {
 }
 
 export function createTestDataSource(
-  entities: (Function | string | EntitySchema<any>)[],
+  entities: (EntityClass | string | EntitySchema<unknown>)[],
   options: TestDataSourceOptions = {},
 ): DataSource {
   const { synchronize = true, migrations } = options;
@@ -23,9 +29,16 @@ export function createTestDataSource(
   });
 }
 
+/**
+ * Wipes every table in one statement.
+ *
+ * A sequence of DELETEs is sensitive to ordering and to anything else holding a
+ * connection — an e2e suite that also boots the worker context has two pools
+ * against the same database, and a delete that lands out of order fails with a
+ * foreign-key violation. TRUNCATE ... CASCADE is atomic and order-independent.
+ */
 export async function cleanAllTables(dataSource: DataSource): Promise<void> {
-  await dataSource.query('DELETE FROM "refresh_tokens"');
-  await dataSource.query('DELETE FROM "verification_tokens"');
-  await dataSource.query('DELETE FROM "channels"');
-  await dataSource.query('DELETE FROM "users"');
+  await dataSource.query(
+    'TRUNCATE TABLE "videos", "refresh_tokens", "verification_tokens", "channels", "users" CASCADE',
+  );
 }

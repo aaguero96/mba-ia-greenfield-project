@@ -1,9 +1,15 @@
 FROM node:25.6.0-slim
 
-RUN apt update && apt install -y procps curl
+# ffmpeg is here for the **test suite**: the worker's specs exercise the real
+# ffprobe/ffmpeg binaries (the project rule is not to mock what the Compose stack
+# can run for real), and the whole suite runs in this container in one command.
+# The worker's own runtime image (Dockerfile.worker) is what carries FFmpeg in
+# the architecture; a production API image must not include this layer.
+RUN apt update && apt install -y --no-install-recommends procps curl ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/node/app
 
 USER node
 
-CMD [ "tail", "-f", "/dev/null" ] 
+CMD [ "tail", "-f", "/dev/null" ]

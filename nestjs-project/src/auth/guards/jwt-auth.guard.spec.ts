@@ -88,4 +88,42 @@ describe('JwtAuthGuard', () => {
     });
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
+
+  describe('optional authentication on public routes', () => {
+    beforeEach(() => {
+      mockReflector.getAllAndOverride.mockReturnValue(true);
+    });
+
+    it('attaches the caller when a public route receives a valid token', async () => {
+      const token = await jwtService.signAsync({
+        sub: 'user-1',
+        email: 'user@example.com',
+      });
+      const request: Record<string, unknown> = {
+        headers: { authorization: `Bearer ${token}` },
+      };
+
+      await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
+
+      // This is what lets a public endpoint show the owner their own
+      // unpublished content while staying reachable anonymously.
+      expect(request.user).toMatchObject({ sub: 'user-1' });
+    });
+
+    it('still allows the request when a public route receives an invalid token', async () => {
+      const request: Record<string, unknown> = {
+        headers: { authorization: 'Bearer not-a-real-token' },
+      };
+
+      await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
+      expect(request.user).toBeUndefined();
+    });
+
+    it('leaves the caller anonymous when no token is sent', async () => {
+      const request: Record<string, unknown> = { headers: {} };
+
+      await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
+      expect(request.user).toBeUndefined();
+    });
+  });
 });
