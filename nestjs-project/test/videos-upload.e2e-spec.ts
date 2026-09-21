@@ -190,7 +190,9 @@ describe('Videos upload lifecycle (e2e)', () => {
     it('returns 422 and fails the video when the stored size differs from the declared one', async () => {
       // Declares more than it uploads. The API never sees the bytes, so the
       // mismatch can only be caught by reading the stored object back.
-      const res = await initiate({ ...validBody, size_bytes: 9999 }).expect(201);
+      const res = await initiate({ ...validBody, size_bytes: 9999 }).expect(
+        201,
+      );
       const publicId = (res.body as { video: { id: string } }).video.id;
 
       const signed = await signParts(publicId, [1]).expect(200);

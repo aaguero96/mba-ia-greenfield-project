@@ -8,7 +8,12 @@ import {
   Res,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
-import { ApiOperation, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ApiErrorEnvelope } from '../common/openapi/api-error-envelope.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -34,7 +39,11 @@ export class VideosPublicController {
     description:
       'Returns the video and its unique URLs. Only ready videos are visible anonymously; the owner also sees their own drafts.',
   })
-  @ApiResponse({ status: 200, description: 'The video', type: VideoResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The video',
+    type: VideoResponseDto,
+  })
   @ApiResponse({
     status: 404,
     description: 'Video not found, or not ready and requested by someone else',
@@ -58,8 +67,14 @@ export class VideosPublicController {
       'Serves the video with HTTP Range support, so playback starts without downloading the whole file. Without a Range header the full body is returned with Accept-Ranges.',
   })
   @ApiResponse({ status: 200, description: 'Full body' })
-  @ApiResponse({ status: 206, description: 'Partial content for the requested range' })
-  @ApiResponse({ status: 416, description: 'The requested range is not satisfiable' })
+  @ApiResponse({
+    status: 206,
+    description: 'Partial content for the requested range',
+  })
+  @ApiResponse({
+    status: 416,
+    description: 'The requested range is not satisfiable',
+  })
   @ApiResponse({
     status: 404,
     description: 'Video not found',

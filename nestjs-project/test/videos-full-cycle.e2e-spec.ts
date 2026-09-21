@@ -120,7 +120,11 @@ describe('Videos full cycle (e2e)', () => {
 
     const body = details.body as Record<string, unknown>;
     expect(body.duration_seconds).toBeCloseTo(3, 0);
-    expect(body.metadata).toMatchObject({ width: 320, height: 240, codec: 'h264' });
+    expect(body.metadata).toMatchObject({
+      width: 320,
+      height: 240,
+      codec: 'h264',
+    });
     expect(body.thumbnail_url).toBe(`${video.url}/thumbnail`);
 
     // 6. The thumbnail is a real JPEG produced from a frame of the video.
@@ -150,7 +154,7 @@ describe('Videos full cycle (e2e)', () => {
     const redirect = await request(app.getHttpServer())
       .get(`/videos/${video.id}/download`)
       .expect(302);
-    const downloaded = await fetch(redirect.headers['location'] as string);
+    const downloaded = await fetch(redirect.headers['location']);
     expect(Buffer.from(await downloaded.arrayBuffer())).toEqual(fixtureBytes);
   }, 300_000);
 

@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
-**Status:** in progress
-**SIs:** 13/14 completed
+**Status:** completed
+**SIs:** 14/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -94,6 +94,11 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** `openapi.json` regenerated with all 8 video paths and mirrored into `next-frontend/` via `scripts/sync-openapi.sh`. Root `CLAUDE.md` gained a Video Module section (upload flow, processing, playback, status lifecycle, unique URL, storage layout) and the queue is no longer `TBD` there or in `software-arch.mermaid`. The backend `CLAUDE.md` documents the three new Compose services, their readiness probes, the worker entrypoint, and the three environment caveats that cost real debugging time: the endpoint duality, the test-time overrides, and the SDK checksum setting.
 
 ### SI-03.14 — Inherited Lint Debt
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** no new tests — full suite 320/320 and e2e 96/96 still green; `npm run lint` exits 0 (was exit 1 with 150 inherited errors, 199 once this phase's own files were added); `npx tsc --noEmit` exits 0; `eslint.config.mjs` is byte-identical to the inherited one
+- **Observations:** Fixed by typing the code, never by relaxing a rule. Four root causes accounted for almost all of it:
+  (1) `jest.Mocked<T>` keeps the original method signatures, so `expect(service.method)` is reported by `unbound-method` — correctly, since a real method can depend on `this`. A mock is a plain function, so `src/test/mock-types.ts` declares `MockedService<T> = { [K in keyof T]: jest.Mock }`, which is both more accurate and warning-free. Empirically confirmed that `jest.mocked()` in any position does **not** satisfy the rule; only the type does.
+  (2) Once the mocks were typed as mock functions, 35 `as any` casts in `auth.service.spec.ts` became unnecessary and were simply deleted — the fix removed code rather than adding it.
+  (3) Supertest types `response.body` as `any`; the shapes each suite reads are now named (`ErrorBody`, `TokenPair`, …) and asserted through them. The same applied at the source for the Mailpit helper, which now has typed API responses, fixing all 16 errors in the mail suite at once.
+  (4) `channels.service.ts` read `code`/`detail` off an `as any` error; it now reads them from a typed `driverError`, which is where the pg driver actually puts them.
+  The `no-unused-vars` cluster was debt this phase created: centralizing `ALL_ENTITIES` left entity imports orphaned in ten specs.

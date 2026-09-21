@@ -1,4 +1,8 @@
-import { safeExtension, videoSourceKey, videoThumbnailKey } from './storage.keys';
+import {
+  safeExtension,
+  videoSourceKey,
+  videoThumbnailKey,
+} from './storage.keys';
 
 describe('storage keys', () => {
   const channelId = '11111111-1111-1111-1111-111111111111';

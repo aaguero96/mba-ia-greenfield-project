@@ -18,5 +18,8 @@ export default registerAs('video', () => ({
   // Thumbnail frame position as a fraction of the video duration (see TD-12).
   thumbnailPercent: parseFloat(process.env.VIDEO_THUMBNAIL_PERCENT || '0.1'),
   // Hard timeout for a single ffprobe/ffmpeg invocation, in milliseconds.
-  ffmpegTimeoutMs: parseInt(process.env.VIDEO_FFMPEG_TIMEOUT_MS || '120000', 10),
+  ffmpegTimeoutMs: parseInt(
+    process.env.VIDEO_FFMPEG_TIMEOUT_MS || '120000',
+    10,
+  ),
 }));

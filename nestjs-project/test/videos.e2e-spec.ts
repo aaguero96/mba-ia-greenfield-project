@@ -5,7 +5,10 @@ import type { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import { cleanAllTables } from '../src/test/create-test-data-source';
-import { VIDEO_MAX_SIZE_BYTES, VIDEO_PART_SIZE_BYTES } from '../src/videos/videos.constants';
+import {
+  VIDEO_MAX_SIZE_BYTES,
+  VIDEO_PART_SIZE_BYTES,
+} from '../src/videos/videos.constants';
 import { createVideoTestApp, registerAndLogin } from './video-test-client';
 import type { AuthenticatedUser } from './video-test-client';
 
@@ -64,7 +67,8 @@ describe('Videos (e2e)', () => {
 
     it('generates a short unique public id and the derived URLs', async () => {
       const res = await initiate(validBody).expect(201);
-      const video = (res.body as { video: Record<string, string | null> }).video;
+      const video = (res.body as { video: Record<string, string | null> })
+        .video;
 
       expect(video.id).toMatch(/^[A-Za-z0-9_-]{11}$/);
       expect(video.url).toContain(`/videos/${video.id}`);
@@ -89,7 +93,9 @@ describe('Videos (e2e)', () => {
         size_bytes: VIDEO_PART_SIZE_BYTES * 3 + 1,
       }).expect(201);
 
-      expect((res.body as { upload: { part_count: number } }).upload.part_count).toBe(4);
+      expect(
+        (res.body as { upload: { part_count: number } }).upload.part_count,
+      ).toBe(4);
     }, 30_000);
 
     it('accepts a declared size of exactly 10GiB', async () => {
@@ -99,7 +105,9 @@ describe('Videos (e2e)', () => {
       }).expect(201);
 
       // 10GiB at 64MiB parts is 160 parts — far below the 10,000 limit.
-      expect((res.body as { upload: { part_count: number } }).upload.part_count).toBe(160);
+      expect(
+        (res.body as { upload: { part_count: number } }).upload.part_count,
+      ).toBe(160);
     }, 30_000);
 
     it('returns 400 when the declared size exceeds 10GiB', async () => {
@@ -112,11 +120,14 @@ describe('Videos (e2e)', () => {
     });
 
     it('returns 400 for a content type outside the allowlist', async () => {
-      await initiate({ ...validBody, content_type: 'application/zip' }).expect(400);
+      await initiate({ ...validBody, content_type: 'application/zip' }).expect(
+        400,
+      );
     });
 
     it('returns 400 when the title is missing', async () => {
-      const { title, ...withoutTitle } = validBody;
+      const withoutTitle: Record<string, unknown> = { ...validBody };
+      delete withoutTitle.title;
       await initiate(withoutTitle).expect(400);
     });
 
@@ -133,9 +144,13 @@ describe('Videos (e2e)', () => {
 
     it('assigns the video to the caller own channel, never to a supplied one', async () => {
       const res = await initiate(validBody).expect(201);
-      const video = (res.body as { video: { id: string; channel: { id: string } } }).video;
+      const video = (
+        res.body as { video: { id: string; channel: { id: string } } }
+      ).video;
 
-      const rows = await dataSource.query<{ channel_id: string; user_id: string }[]>(
+      const rows = await dataSource.query<
+        { channel_id: string; user_id: string }[]
+      >(
         `SELECT v.channel_id, c.user_id FROM videos v
          JOIN channels c ON c.id = v.channel_id
          WHERE v.public_id = $1`,
@@ -155,9 +170,10 @@ describe('Videos (e2e)', () => {
 
       const rows = await dataSource.query<
         { status: string; upload_id: string; storage_key: string }[]
-      >(`SELECT status, upload_id, storage_key FROM videos WHERE public_id = $1`, [
-        video.id,
-      ]);
+      >(
+        `SELECT status, upload_id, storage_key FROM videos WHERE public_id = $1`,
+        [video.id],
+      );
 
       expect(rows[0].status).toBe('draft');
       expect(rows[0].upload_id).toBe(upload.upload_id);

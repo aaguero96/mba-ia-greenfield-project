@@ -102,7 +102,9 @@ describe('VideoProcessingConsumer (integration)', () => {
   });
 
   /** Stores a source object and the matching `processing` row. */
-  async function givenProcessingVideo(body: Buffer = fixtureBytes): Promise<Video> {
+  async function givenProcessingVideo(
+    body: Buffer = fixtureBytes,
+  ): Promise<Video> {
     const id = randomUUID();
     const key = videoSourceKey(channelId, id, 'fixture.mp4');
 
@@ -159,7 +161,10 @@ describe('VideoProcessingConsumer (integration)', () => {
     const reloaded = await videos.findOneByOrFail({ id: video.id });
     expect(reloaded.thumbnail_key).toBe(expectedKey);
 
-    const head = await storage.headObject(expectedKey, storage.thumbnailsBucket);
+    const head = await storage.headObject(
+      expectedKey,
+      storage.thumbnailsBucket,
+    );
     expect(head.contentType).toBe('image/jpeg');
     expect(head.contentLength).toBeGreaterThan(0);
   }, 120_000);

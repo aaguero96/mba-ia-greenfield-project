@@ -118,9 +118,17 @@ describe('StorageService (integration)', () => {
       const parts: { partNumber: number; etag: string }[] = [];
       for (const [index, body] of [first, second].entries()) {
         const partNumber = index + 1;
-        const url = await storage.signUploadPart(key, uploadId, partNumber, 900);
+        const url = await storage.signUploadPart(
+          key,
+          uploadId,
+          partNumber,
+          900,
+        );
         const response = await fetch(url, { method: 'PUT', body });
-        parts.push({ partNumber, etag: response.headers.get('etag') as string });
+        parts.push({
+          partNumber,
+          etag: response.headers.get('etag') as string,
+        });
       }
 
       // Reversed on purpose: S3 rejects an unsorted part list.

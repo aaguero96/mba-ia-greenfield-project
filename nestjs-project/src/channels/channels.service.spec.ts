@@ -1,8 +1,11 @@
-import { QueryFailedError } from 'typeorm';
+import { DataSource, QueryFailedError } from 'typeorm';
 import { ChannelsService } from './channels.service';
 import { Channel } from './entities/channel.entity';
 
-function makeManager(overrides: Record<string, jest.Mock> = {}): any {
+/** The EntityManager methods ChannelsService uses, as mock functions. */
+type ManagerMock = Record<string, jest.Mock>;
+
+function makeManager(overrides: Record<string, jest.Mock> = {}): ManagerMock {
   return {
     findOne: jest.fn(),
     create: jest.fn(),
@@ -24,16 +27,23 @@ function makeChannel(nickname: string): Channel {
 }
 
 function makeUniqueError(): QueryFailedError {
-  const err = new QueryFailedError('INSERT', [], new Error()) as any;
-  err.code = '23505';
-  err.detail = 'Key (nickname)=(abc) already exists.';
-  return err;
+  // The pg driver attaches code/detail to the error it raises; the service
+  // reads them from `driverError`.
+  const driverError = Object.assign(new Error(), {
+    code: '23505',
+    detail: 'Key (nickname)=(abc) already exists.',
+  });
+  return new QueryFailedError('INSERT', [], driverError);
 }
 
-function makeDataSource(manager: any): any {
+function makeDataSource(manager: ManagerMock): DataSource {
+  // Only `transaction` is exercised, so the stub is narrowed to it rather than
+  // pretending to be a whole DataSource.
   return {
-    transaction: jest.fn((cb: (manager: any) => Promise<any>) => cb(manager)),
-  };
+    transaction: jest.fn((cb: (manager: ManagerMock) => Promise<unknown>) =>
+      cb(manager),
+    ),
+  } as unknown as DataSource;
 }
 
 describe('ChannelsService', () => {

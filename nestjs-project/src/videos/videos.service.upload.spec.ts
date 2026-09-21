@@ -106,7 +106,9 @@ describe('VideosService — upload lifecycle', () => {
 
     it('should reject a video owned by another user', async () => {
       videoRepository.findOne.mockResolvedValueOnce(
-        draft({ channel: { id: 'ch-2', nickname: 'x', user_id: 'other' } as never }),
+        draft({
+          channel: { id: 'ch-2', nickname: 'x', user_id: 'other' } as never,
+        }),
       );
 
       await expect(
@@ -127,7 +129,11 @@ describe('VideosService — upload lifecycle', () => {
 
   describe('signUploadParts', () => {
     it('should return one URL per requested part with the configured TTL', async () => {
-      const result = await service.signUploadParts(OWNER, 'AbCdEfGhIjK', [1, 2]);
+      const result = await service.signUploadParts(
+        OWNER,
+        'AbCdEfGhIjK',
+        [1, 2],
+      );
 
       expect(result.parts).toHaveLength(2);
       expect(result.parts[0]).toEqual({
@@ -204,7 +210,7 @@ describe('VideosService — upload lifecycle', () => {
         service.completeUpload(OWNER, 'AbCdEfGhIjK', parts),
       ).rejects.toBeInstanceOf(UploadSizeMismatchException);
 
-      const saved = videoRepository.save.mock.calls[0][0] as Video;
+      const saved = (videoRepository.save.mock.calls[0] as [Video])[0];
       expect(saved.status).toBe('failed');
       expect(saved.processing_error).toContain('does not match');
       expect(saved.upload_id).toBeNull();

@@ -342,10 +342,7 @@ export class VideosService {
   }
 
   /** A playable video — the guard in front of streaming and download. */
-  async findPlayable(
-    publicId: string,
-    currentUserId?: string,
-  ): Promise<Video> {
+  async findPlayable(publicId: string, currentUserId?: string): Promise<Video> {
     const video = await this.findPublic(publicId, currentUserId);
 
     if (video.status !== 'ready') {

@@ -7,7 +7,10 @@ export class SignedPartDto {
   @ApiProperty({ description: 'Pre-signed URL the client PUTs the part to' })
   url: string;
 
-  @ApiProperty({ description: 'Lifetime of the URL in seconds', example: 21600 })
+  @ApiProperty({
+    description: 'Lifetime of the URL in seconds',
+    example: 21600,
+  })
   expires_in: number;
 }
 

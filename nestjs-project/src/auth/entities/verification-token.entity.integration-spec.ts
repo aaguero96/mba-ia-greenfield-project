@@ -1,16 +1,14 @@
 import { DataSource, Repository } from 'typeorm';
-import { Channel } from '../../channels/entities/channel.entity';
 import { User } from '../../users/entities/user.entity';
-import {ALL_ENTITIES,
+import {
+  ALL_ENTITIES,
   cleanAllTables,
   createTestDataSource,
 } from '../../test/create-test-data-source';
-import { RefreshToken } from './refresh-token.entity';
 import {
   VerificationToken,
   VerificationTokenType,
 } from './verification-token.entity';
-
 
 describe('VerificationToken entity (integration)', () => {
   let dataSource: DataSource;

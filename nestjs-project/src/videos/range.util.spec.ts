@@ -65,11 +65,19 @@ describe('parseRangeHeader', () => {
   });
 
   it('should report any range against an empty object as unsatisfiable', () => {
-    expect(parseRangeHeader('bytes=0-10', 0)).toEqual({ kind: 'unsatisfiable' });
+    expect(parseRangeHeader('bytes=0-10', 0)).toEqual({
+      kind: 'unsatisfiable',
+    });
   });
 
   it('should treat a malformed header as no range', () => {
-    for (const header of ['bytes=abc', 'items=0-10', 'bytes 0-10', '', 'bytes=']) {
+    for (const header of [
+      'bytes=abc',
+      'items=0-10',
+      'bytes 0-10',
+      '',
+      'bytes=',
+    ]) {
       expect(parseRangeHeader(header, SIZE)).toEqual({ kind: 'none' });
     }
   });

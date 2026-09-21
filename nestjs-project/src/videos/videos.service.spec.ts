@@ -76,7 +76,10 @@ describe('VideosService — initiateUpload', () => {
           useValue: { getRepository: () => channelRepository },
         },
         { provide: StorageService, useValue: storage },
-        { provide: VideoQueueService, useValue: { enqueueProcessing: jest.fn() } },
+        {
+          provide: VideoQueueService,
+          useValue: { enqueueProcessing: jest.fn() },
+        },
         { provide: videoConfig.KEY, useValue: videoConfig() },
         { provide: appConfig.KEY, useValue: { url: 'http://localhost:3000' } },
       ],
@@ -124,7 +127,10 @@ describe('VideosService — initiateUpload', () => {
   it('should open the multipart upload under a channel-scoped key', async () => {
     await service.initiateUpload('user-1', dto);
 
-    const [key, contentType] = storage.createMultipartUpload.mock.calls[0];
+    const [key, contentType] = storage.createMultipartUpload.mock.calls[0] as [
+      string,
+      string,
+    ];
     expect(key).toMatch(/^videos\/ch-1\/[0-9a-f-]{36}\/source\.mp4$/);
     expect(contentType).toBe('video/mp4');
   });

@@ -10,11 +10,26 @@ const requiredEnv = {
   S3_SECRET_KEY: 'secret-key',
 };
 
+/** Joi types `value` as `any`; naming the shape keeps the assertions checked. */
+type ValidatedEnv = Record<string, string | number>;
+
+const validateRaw = (env: Record<string, string>) => {
+  const result = envValidationSchema.validate(env, {
+    allowUnknown: true,
+    abortEarly: false,
+  });
+  return { error: result.error, value: result.value as ValidatedEnv };
+};
+
 const validate = (env: Record<string, string>) =>
-  envValidationSchema.validate(
-    { ...requiredEnv, ...env },
-    { allowUnknown: true, abortEarly: false },
-  );
+  validateRaw({ ...requiredEnv, ...env });
+
+/** Returns the fixture without one key, without leaving an unused binding. */
+function without(key: keyof typeof requiredEnv): Record<string, string> {
+  const copy: Record<string, string> = { ...requiredEnv };
+  delete copy[key];
+  return copy;
+}
 
 describe('envValidationSchema — SWAGGER_ENABLED', () => {
   it('should reject SWAGGER_ENABLED with an invalid value', () => {
@@ -42,21 +57,13 @@ describe('envValidationSchema — SWAGGER_ENABLED', () => {
 
 describe('envValidationSchema — storage', () => {
   it('should reject a missing S3_ACCESS_KEY', () => {
-    const { S3_ACCESS_KEY, ...withoutAccessKey } = requiredEnv;
-    const { error } = envValidationSchema.validate(withoutAccessKey, {
-      allowUnknown: true,
-      abortEarly: false,
-    });
+    const { error } = validateRaw(without('S3_ACCESS_KEY'));
     expect(error).toBeDefined();
     expect(error!.message).toContain('S3_ACCESS_KEY');
   });
 
   it('should reject a missing S3_SECRET_KEY', () => {
-    const { S3_SECRET_KEY, ...withoutSecretKey } = requiredEnv;
-    const { error } = envValidationSchema.validate(withoutSecretKey, {
-      allowUnknown: true,
-      abortEarly: false,
-    });
+    const { error } = validateRaw(without('S3_SECRET_KEY'));
     expect(error).toBeDefined();
     expect(error!.message).toContain('S3_SECRET_KEY');
   });

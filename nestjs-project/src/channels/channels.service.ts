@@ -7,13 +7,25 @@ const PG_UNIQUE_VIOLATION = '23505';
 const NICKNAME_COLUMN = 'nickname';
 const MAX_RETRIES = 5;
 
+/** The fields the pg driver adds to a QueryFailedError. */
+interface PostgresDriverError {
+  code?: string;
+  detail?: string;
+}
+
 function isPgUniqueViolationOnColumn(err: unknown, column: string): boolean {
   if (!(err instanceof QueryFailedError)) return false;
-  const e = err as any;
+
+  const driverError = err.driverError as PostgresDriverError | undefined;
+  const code =
+    driverError?.code ?? (err as unknown as PostgresDriverError).code;
+  const detail =
+    driverError?.detail ?? (err as unknown as PostgresDriverError).detail;
+
   return (
-    e.code === PG_UNIQUE_VIOLATION &&
-    typeof e.detail === 'string' &&
-    e.detail.includes(column)
+    code === PG_UNIQUE_VIOLATION &&
+    typeof detail === 'string' &&
+    detail.includes(column)
   );
 }
 

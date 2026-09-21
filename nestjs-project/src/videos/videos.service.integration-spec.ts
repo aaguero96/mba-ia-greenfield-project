@@ -46,7 +46,13 @@ describe('VideosService (integration)', () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          load: [appConfig, databaseConfig, queueConfig, storageConfig, videoConfig],
+          load: [
+            appConfig,
+            databaseConfig,
+            queueConfig,
+            storageConfig,
+            videoConfig,
+          ],
         }),
         TypeOrmModule.forRoot({
           type: 'postgres',
@@ -109,7 +115,10 @@ describe('VideosService (integration)', () => {
       storage.listParts(row.storage_key, row.upload_id as string),
     ).resolves.toEqual([]);
 
-    await storage.abortMultipartUpload(row.storage_key, row.upload_id as string);
+    await storage.abortMultipartUpload(
+      row.storage_key,
+      row.upload_id as string,
+    );
   }, 30_000);
 
   it('should build a storage key scoped to the channel and the video', async () => {
@@ -118,7 +127,10 @@ describe('VideosService (integration)', () => {
 
     expect(row.storage_key).toBe(`videos/${channelId}/${row.id}/source.mp4`);
 
-    await storage.abortMultipartUpload(row.storage_key, row.upload_id as string);
+    await storage.abortMultipartUpload(
+      row.storage_key,
+      row.upload_id as string,
+    );
   }, 30_000);
 
   it('should leave no open multipart upload when persisting fails', async () => {
@@ -148,7 +160,10 @@ describe('VideosService (integration)', () => {
     expect(row.size_bytes).toBe('10737418240');
     expect(row.part_count).toBe(160);
 
-    await storage.abortMultipartUpload(row.storage_key, row.upload_id as string);
+    await storage.abortMultipartUpload(
+      row.storage_key,
+      row.upload_id as string,
+    );
   }, 30_000);
 
   it('should give concurrent initiations distinct public ids and keys', async () => {
@@ -163,7 +178,10 @@ describe('VideosService (integration)', () => {
     expect(new Set(rows.map((row) => row.storage_key)).size).toBe(2);
 
     for (const row of rows) {
-      await storage.abortMultipartUpload(row.storage_key, row.upload_id as string);
+      await storage.abortMultipartUpload(
+        row.storage_key,
+        row.upload_id as string,
+      );
     }
   }, 30_000);
 });

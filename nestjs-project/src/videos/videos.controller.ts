@@ -79,7 +79,11 @@ export class VideosController {
     description:
       'Returns one pre-signed URL per requested part. Re-signing is allowed, so a client whose URLs expired resumes instead of restarting the upload.',
   })
-  @ApiResponse({ status: 200, description: 'Signed part URLs', type: SignPartsResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Signed part URLs',
+    type: SignPartsResponseDto,
+  })
   @ApiResponse({
     status: 400,
     description: 'Validation failed or a part number is out of range',
@@ -119,7 +123,11 @@ export class VideosController {
     description:
       'Lists the parts storage already holds, so an interrupted client can skip them when resuming.',
   })
-  @ApiResponse({ status: 200, description: 'Upload state', type: UploadStatusResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload state',
+    type: UploadStatusResponseDto,
+  })
   @ApiResponse({
     status: 403,
     description: 'The video belongs to another channel',
@@ -150,7 +158,11 @@ export class VideosController {
     description:
       'Assembles the uploaded parts, verifies the stored object against the declared size, moves the video to processing and enqueues it for the worker.',
   })
-  @ApiResponse({ status: 200, description: 'Upload completed', type: VideoResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload completed',
+    type: VideoResponseDto,
+  })
   @ApiResponse({
     status: 400,
     description: 'Validation failed',

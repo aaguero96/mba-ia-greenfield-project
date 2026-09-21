@@ -8,7 +8,10 @@ import {
   cleanAllTables,
   createTestDataSource,
 } from '../../test/create-test-data-source';
-import { VIDEO_MAX_SIZE_BYTES, VIDEO_PART_SIZE_BYTES } from '../videos.constants';
+import {
+  VIDEO_MAX_SIZE_BYTES,
+  VIDEO_PART_SIZE_BYTES,
+} from '../videos.constants';
 import { Video } from './video.entity';
 
 describe('Video entity (integration)', () => {

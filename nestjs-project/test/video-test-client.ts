@@ -56,11 +56,14 @@ export async function registerAndLogin(
   let confirmationToken = '';
   jest
     .spyOn(mailService as never, 'sendConfirmationEmail')
-    .mockImplementationOnce(
-      (async (_email: string, _nickname: string, token: string) => {
-        confirmationToken = token;
-      }) as never,
-    );
+    .mockImplementationOnce(((
+      _email: string,
+      _nickname: string,
+      token: string,
+    ) => {
+      confirmationToken = token;
+      return Promise.resolve();
+    }) as never);
 
   await request(app.getHttpServer())
     .post('/auth/register')

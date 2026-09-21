@@ -34,7 +34,9 @@ describe('WorkerModule', () => {
       // The worker imports only VideosModule; without the explicit entity list
       // this relation fails with "Entity metadata for Video#channel not found".
       expect(
-        metadata.relations.some((relation) => relation.propertyName === 'channel'),
+        metadata.relations.some(
+          (relation) => relation.propertyName === 'channel',
+        ),
       ).toBe(true);
     } finally {
       await moduleRef.close();

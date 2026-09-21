@@ -28,7 +28,10 @@ export class VideoMetadataDto {
 }
 
 export class VideoResponseDto {
-  @ApiProperty({ description: 'Short unique public identifier', example: 'AbCdEfGhIjK' })
+  @ApiProperty({
+    description: 'Short unique public identifier',
+    example: 'AbCdEfGhIjK',
+  })
   id: string;
 
   @ApiProperty()
@@ -85,10 +88,16 @@ export class UploadPlanDto {
   @ApiProperty({ description: 'S3 multipart upload identifier' })
   upload_id: string;
 
-  @ApiProperty({ description: 'Size of every part but the last, in bytes', example: 67108864 })
+  @ApiProperty({
+    description: 'Size of every part but the last, in bytes',
+    example: 67108864,
+  })
   part_size: number;
 
-  @ApiProperty({ description: 'Number of parts the client must upload', example: 160 })
+  @ApiProperty({
+    description: 'Number of parts the client must upload',
+    example: 160,
+  })
   part_count: number;
 }
 

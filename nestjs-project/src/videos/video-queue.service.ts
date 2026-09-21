@@ -17,7 +17,8 @@ export class VideoQueueService {
   private readonly logger = new Logger(VideoQueueService.name);
 
   constructor(
-    @InjectQueue(VIDEO_QUEUE) private readonly queue: Queue<ProcessVideoJobData>,
+    @InjectQueue(VIDEO_QUEUE)
+    private readonly queue: Queue<ProcessVideoJobData>,
   ) {}
 
   /**

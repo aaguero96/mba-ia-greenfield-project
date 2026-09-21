@@ -214,10 +214,15 @@ describe('Videos playback (e2e)', () => {
 
       const res = await request(app.getHttpServer())
         .get(`/videos/${publicId}/stream`)
-        .set('Range', `bytes=${fixtureBytes.length + 10}-${fixtureBytes.length + 20}`)
+        .set(
+          'Range',
+          `bytes=${fixtureBytes.length + 10}-${fixtureBytes.length + 20}`,
+        )
         .expect(416);
 
-      expect(res.headers['content-range']).toBe(`bytes */${fixtureBytes.length}`);
+      expect(res.headers['content-range']).toBe(
+        `bytes */${fixtureBytes.length}`,
+      );
     }, 180_000);
 
     it('is not rate limited, unlike the throttled auth endpoints', async () => {
@@ -264,7 +269,7 @@ describe('Videos playback (e2e)', () => {
         .get(`/videos/${publicId}/download`)
         .expect(302);
 
-      const location = res.headers['location'] as string;
+      const location = res.headers['location'];
       expect(location).toContain('X-Amz-Signature');
 
       // Express writes a short courtesy body with the redirect; what matters is
@@ -285,7 +290,7 @@ describe('Videos playback (e2e)', () => {
         .get(`/videos/${publicId}/download`)
         .expect(302);
 
-      const downloaded = await fetch(res.headers['location'] as string);
+      const downloaded = await fetch(res.headers['location']);
 
       expect(downloaded.status).toBe(200);
       expect(downloaded.headers.get('content-disposition')).toContain(

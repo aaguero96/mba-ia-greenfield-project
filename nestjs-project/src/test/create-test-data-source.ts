@@ -3,13 +3,16 @@ import { ALL_ENTITIES } from '../database/entities';
 
 export { ALL_ENTITIES };
 
+/** An entity is a class, so a constructor type says more than `Function`. */
+type EntityClass = new (...args: never[]) => object;
+
 interface TestDataSourceOptions {
   synchronize?: boolean;
   migrations?: (new () => MigrationInterface)[];
 }
 
 export function createTestDataSource(
-  entities: (Function | string | EntitySchema<any>)[],
+  entities: (EntityClass | string | EntitySchema<unknown>)[],
   options: TestDataSourceOptions = {},
 ): DataSource {
   const { synchronize = true, migrations } = options;

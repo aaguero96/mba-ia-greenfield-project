@@ -26,7 +26,13 @@ import { VideoProcessingConsumer } from './video-processing.consumer';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, queueConfig, storageConfig, videoConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        queueConfig,
+        storageConfig,
+        videoConfig,
+      ],
       validationSchema: envValidationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),

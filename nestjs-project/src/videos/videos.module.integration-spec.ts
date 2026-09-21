@@ -26,7 +26,13 @@ describe('VideosModule (integration)', () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          load: [appConfig, databaseConfig, queueConfig, storageConfig, videoConfig],
+          load: [
+            appConfig,
+            databaseConfig,
+            queueConfig,
+            storageConfig,
+            videoConfig,
+          ],
         }),
         TypeOrmModule.forRoot({
           type: 'postgres',
@@ -47,7 +53,9 @@ describe('VideosModule (integration)', () => {
     try {
       expect(moduleRef.get(getRepositoryToken(Video))).toBeDefined();
       expect(moduleRef.get(VideosService)).toBeInstanceOf(VideosService);
-      expect(moduleRef.get(VideoQueueService)).toBeInstanceOf(VideoQueueService);
+      expect(moduleRef.get(VideoQueueService)).toBeInstanceOf(
+        VideoQueueService,
+      );
       expect(moduleRef.get(VideosController)).toBeInstanceOf(VideosController);
     } finally {
       await moduleRef.close();
