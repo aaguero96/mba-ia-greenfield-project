@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 2/14 completed
+**SIs:** 3/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -29,9 +29,12 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
 - **Observations:** `docker.io/minio/minio` is no longer pullable anonymously (`pull access denied … repository does not exist`); pinned `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z` instead. MinIO's healthcheck uses `mc ready local` — recent images ship `mc` but no `curl`. Adding `S3_ACCESS_KEY`/`S3_SECRET_KEY` as Joi-required broke every existing case in `env.validation.integration-spec.ts` until they were added to its `requiredEnv` fixture. Verified `ffprobe`/`ffmpeg` 5.1.9 exist in `video-worker` and are absent from `nestjs-api`, as TD-05 requires.
 
 ### SI-03.3 — Storage Module (S3 clients, bucket bootstrap, pre-signing)
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 24/24 (storage.keys.spec: 11 unit, storage.service.integration-spec: 13 integration against real MinIO); full suite 190/190, e2e 52/52, `tsc --noEmit` exit 0
+- **Observations:** Three findings, all confirmed empirically rather than assumed.
+  (1) `requestChecksumCalculation: 'WHEN_REQUIRED'` is mandatory — the integration test uploads parts with a plain `fetch` PUT and no AWS SDK, which is what a browser does and what breaks under the SDK's default checksum headers.
+  (2) MinIO `RELEASE.2025-09-07T16-13-09Z` does not support `AbortIncompleteMultipartUpload` lifecycle rules: a rule with only that action is rejected with `InvalidArgument`, and pairing it with an `Expiration` makes MinIO accept the request but persist only the `Expiration` — verified by reading the rule back. The call is now best-effort: written, read back, and a warning logged when the store did not keep it. Orphan parts are covered by the explicit aborts on every failure path.
+  (3) Tests run inside the API container, where `S3_PUBLIC_ENDPOINT=http://localhost:9000` points at the container itself, so a test cannot fetch a public-signed URL — and SigV4 binds the Host header, so the URL cannot be rewritten after signing. Added `test/setup-test-env.ts` (a `setupFiles` entry in both Jest configs) which applies `S3_PUBLIC_ENDPOINT_TEST` over it. The public/internal split is still asserted directly, by signing through a module built with a deliberately distinct public endpoint.
 
 ### SI-03.4 — Video Entity, Migration, and Unique Public Identifier
 - **Status:** pending
