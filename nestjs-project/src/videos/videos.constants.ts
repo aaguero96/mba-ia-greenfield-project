@@ -27,3 +27,15 @@ export const VIDEO_PUBLIC_ID_LENGTH = 11;
 
 /** Bounded retry when a generated public_id collides with an existing row. */
 export const VIDEO_PUBLIC_ID_MAX_ATTEMPTS = 5;
+
+export const VIDEO_STATUSES = [
+  'draft',
+  'processing',
+  'ready',
+  'failed',
+] as const;
+
+export type VideoStatus = (typeof VIDEO_STATUSES)[number];
+
+/** Name of the PostgreSQL enum type backing the status column. */
+export const VIDEO_STATUS_ENUM_NAME = 'videos_status_enum';

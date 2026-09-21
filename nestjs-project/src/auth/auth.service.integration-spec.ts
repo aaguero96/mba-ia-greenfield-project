@@ -18,9 +18,10 @@ import {
 } from '../common/exceptions/domain.exception';
 import { MailModule } from '../mail/mail.module';
 import { Channel } from '../channels/entities/channel.entity';
+import { Video } from '../videos/entities/video.entity';
 import { User } from '../users/entities/user.entity';
 import { UsersModule } from '../users/users.module';
-import {
+import {ALL_ENTITIES,
   cleanAllTables,
   createTestDataSource,
 } from '../test/create-test-data-source';
@@ -32,7 +33,6 @@ import {
   VerificationTokenType,
 } from './entities/verification-token.entity';
 
-const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken];
 
 async function createAuthTestModule(): Promise<TestingModule> {
   const ds = createTestDataSource(ALL_ENTITIES);
@@ -46,6 +46,7 @@ async function createAuthTestModule(): Promise<TestingModule> {
       TypeOrmModule.forFeature([
         User,
         Channel,
+        Video,
         VerificationToken,
         RefreshToken,
       ]),

@@ -1,7 +1,7 @@
 import { DataSource, Repository } from 'typeorm';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
 import { VerificationToken } from '../auth/entities/verification-token.entity';
-import {
+import {ALL_ENTITIES,
   cleanAllTables,
   createTestDataSource,
 } from '../test/create-test-data-source';
@@ -9,7 +9,6 @@ import { User } from '../users/entities/user.entity';
 import { ChannelsService } from './channels.service';
 import { Channel } from './entities/channel.entity';
 
-const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken];
 
 describe('ChannelsService (integration)', () => {
   let dataSource: DataSource;

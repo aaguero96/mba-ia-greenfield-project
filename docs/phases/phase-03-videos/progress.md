@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in progress
-**SIs:** 3/14 completed
+**SIs:** 4/14 completed
 
 ### Baseline (before SI-03.1)
 
@@ -37,9 +37,9 @@ Both failures are pre-existing defects of the base repository, recorded as `DG-0
   (3) Tests run inside the API container, where `S3_PUBLIC_ENDPOINT=http://localhost:9000` points at the container itself, so a test cannot fetch a public-signed URL — and SigV4 binds the Host header, so the URL cannot be rewritten after signing. Added `test/setup-test-env.ts` (a `setupFiles` entry in both Jest configs) which applies `S3_PUBLIC_ENDPOINT_TEST` over it. The public/internal split is still asserted directly, by signing through a module built with a deliberately distinct public endpoint.
 
 ### SI-03.4 — Video Entity, Migration, and Unique Public Identifier
-- **Status:** pending
-- **Tests:** —
-- **Observations:** —
+- **Status:** completed
+- **Tests:** 26/26 (video-public-id.util.spec: 4 unit, video-urls.util.spec: 5 unit, videos.module.spec: 1 unit, video.entity.integration-spec: 13 integration, migrations.integration-spec: 3 integration); full suite 214/214, e2e 52/52, `tsc --noEmit` exit 0
+- **Observations:** Adding the `Channel.videos` inverse relation broke ten inherited suites with `Entity metadata for Channel#videos was not found` — a test DataSource must register the whole entity graph, not just the entities the suite touches. Each of those specs declared its own copy of `const ALL_ENTITIES = [...]`, so the list is now exported once from `src/test/create-test-data-source.ts` and imported everywhere; the next entity will not break them again. Separately, the migration spec's `beforeAll` dropped tables concurrently via `Promise.all`, which started failing with `relation "channels" already exists` once `videos` referenced `channels` — the drops are now sequential and in reverse dependency order. `duration_seconds` uses a numeric column with a transformer because TypeORM returns `numeric` as a string; `size_bytes` stays a string on purpose, since 10GiB is beyond the range where a JS number is exact.
 
 ### SI-03.5 — Upload Initiation (pre-registration as draft)
 - **Status:** pending
